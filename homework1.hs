@@ -13,8 +13,11 @@ randomIntList n from to = take n . randomRs (from, to) <$> newStdGen
 order3 :: (Int, Int, Int) -> (Int, Int, Int)
 order3 (x, y, z) = let [a,b,c] = sort [x,y,z] in (c, b, a)
 
-highestBit :: Int -> (Int, Int)
-highestBit x = let z = max x 0 in let y = max (finiteBitSize z - countLeadingZeros z - 1) 0 in (2 ^ y, y)
+highestBit :: Int -> Int
+highestBit = fst . highestBitExtended
+
+highestBitExtended :: Int -> (Int, Int)
+highestBitExtended x = let z = max x 0 in let y = max (finiteBitSize z - countLeadingZeros z - 1) 0 in (2 ^ y, y)
 
 smartReplicate :: [Int] -> [Int]
 smartReplicate = concatMap (\y -> replicate y y)
@@ -23,8 +26,11 @@ contains :: Eq a => a -> [[a]] -> [[a]]
 contains = filter . elem
 
 -- Block 2
-removeAt :: Int -> [a] -> (Maybe a, [a])
-removeAt index lst =
+removeAt :: Int -> [a] -> [a]
+removeAt i a = snd (removeAtExtended i a)
+
+removeAtExtended :: Int -> [a] -> (Maybe a, [a])
+removeAtExtended index lst =
   let (f, s) = splitAt index lst
   in mergeAndGetHead f s
     where
@@ -46,6 +52,7 @@ collectEvery k lst =
         moveList (_tl, []) _dropped   = (_tl, [], _dropped)
         moveList (_tl, x:xs) _dropped = (_tl, xs, _dropped ++ [x])
 
+--Extended and base
 stringSum :: String -> Integer
 stringSum x = sum $ map advancedRead $ words x
   where
@@ -70,6 +77,6 @@ mergeSort y@(x:xs) =
             sortLists x yt (res ++ [yh])
         sortLists [] y res = res ++ y
         sortLists x [] res = res ++ x
-        
+
         splitList :: [a] -> ([a], [a])
         splitList x = splitAt (length x `div` 2) x
