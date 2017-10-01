@@ -11,13 +11,13 @@ randomIntList n from to = take n . randomRs (from, to) <$> newStdGen
 
 -- Block 1
 order3 :: (Int, Int, Int) -> (Int, Int, Int)
-order3 (x, y, z) = let [a,b,c] = sort [x,y,z] in (c, b, a)
+order3 (x, y, z) = (\[a,b,c] -> (a, b, c)) $ sort [x,y,z]
 
 highestBit :: Int -> Int
 highestBit = fst . highestBitExtended
 
 highestBitExtended :: Int -> (Int, Int)
-highestBitExtended x = let z = max x 0 in let y = max (finiteBitSize z - countLeadingZeros z - 1) 0 in (2 ^ y, y)
+highestBitExtended x = (\z -> (\y -> (2 ^ y, y)) $ max (finiteBitSize z - countLeadingZeros z - 1) 0) $ max x 0
 
 smartReplicate :: [Int] -> [Int]
 smartReplicate = concatMap (\y -> replicate y y)
