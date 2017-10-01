@@ -5,6 +5,7 @@ module Homework_1
     ) where
 import           Data.Bits
 import           Data.List
+import           Data.Semigroup
 import           System.Random
 import           TreePrinters
 
@@ -297,3 +298,32 @@ splitOn x = foldr (addFunc x) [[]]
         else (cur:h):t
 
 --Fifth
+maybeConcat :: [Maybe [a]] -> [a]
+maybeConcat = concatMap fromMaybe
+  where
+    fromMaybe :: Maybe [a] -> [a]
+    fromMaybe Nothing = []
+    fromMaybe (Just x) = x
+
+data NonEmpty a = a :| [a]
+  deriving Show
+instance Semigroup (NonEmpty a) where
+  (ah :| at) <> (bh :| bt) = ah :| (at ++ bh : bt)
+
+newtype Identity a = Identity { runIdentity :: a }
+  deriving Show
+instance Monoid a => Monoid (Identity a) where
+  mempty = mempty
+  mappend a b = Identity (mappend (runIdentity a) (runIdentity b))
+
+instance Semigroup (Tree a) where
+  (<>) = mappend
+
+instance Monoid (Tree a) where
+  mempty = Leaf
+  mappend = treeMappend
+
+treeMappend :: Tree a -> Tree a -> Tree a
+treeMappend (Node v Leaf right) t = Node v t right
+treeMappend (Node v left Leaf) t = Node v left t
+treeMappend (Node v left right) t = Node v (treeMappend left t) right
