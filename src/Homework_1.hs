@@ -48,10 +48,10 @@ module Homework_1
     , NonEmpty (..)
     , Identity (..)
     ) where
-import           Data.Bits
-import           Data.List
+import           Data.Bits      (countLeadingZeros, finiteBitSize)
+import           Data.List      (sort)
 import           Data.Semigroup (Semigroup (..))
-import           System.Random (newStdGen, randomRs)
+import           System.Random  (newStdGen, randomRs)
 import           TreePrinters
 
 --Block 2 Task 4
