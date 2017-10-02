@@ -1,11 +1,33 @@
 {-# LANGUAGE ExplicitForAll #-}
 
 module Homework_1
-    (
+    ( order3
+    , highestBit
+    , highestBitExtended
+    , smartReplicate
+    , contains
+    -- second block
+    , removeAt
+    , removeAtExtended
+    , collectEvery
+    , stringSum
+    , mergeSort
+    -- third block
+    , Day (..)
+    , nextDay
+    , afterDays
+    , isWeekend
+    , daysToParty
+    , Hp (..)
+    , Attack (..)
+    , RestHp (..)
+    , Monster (..)
+    , Knight (..)
+    , fight
     ) where
 import           Data.Bits
 import           Data.List
-import           Data.Semigroup
+import           Data.Semigroup (Semigroup (..))
 import           System.Random
 import           TreePrinters
 
@@ -104,15 +126,15 @@ daysToParty day = mod (fromEnum Fri - fromEnum day + 7) 7
 
 --second
 newtype Hp = Hp {hp :: Int}
-  deriving (Show)
+  deriving (Show, Eq)
 newtype Attack = Attack {at ::Int}
-  deriving (Show)
+  deriving (Show, Eq)
 newtype RestHp = RestHp Hp
-  deriving (Show)
+  deriving (Show, Eq)
 data Monster = Monster Hp Attack
-  deriving (Show)
+  deriving (Show, Eq)
 data Knight = Knight Hp Attack
-  deriving (Show)
+  deriving (Show, Eq)
 
 fight :: Monster -> Knight -> (Either Monster Knight, RestHp)
 fight m@(Monster mhp mat) k@(Knight khp kat) =
@@ -120,9 +142,9 @@ fight m@(Monster mhp mat) k@(Knight khp kat) =
     mAttacks = hp khp `div` at mat + 1
     kAttacks = (hp mhp + 1) `div` at kat
     knightRest = Hp (hp khp `mod` (mAttacks * at mat))
-    monsterRest = Hp (hp mhp `mod` (kAttacks * at kat))
+    monsterRest = Hp (hp mhp `mod` (kAttacks * (at kat - 1)))
   in
-  if kAttacks <= mAttacks
+  if kAttacks < mAttacks
   then
     (Right (Knight knightRest kat), RestHp knightRest)
   else
@@ -321,7 +343,7 @@ instance Semigroup (Tree a) where
 
 instance Monoid (Tree a) where
   mempty = Leaf
-  mappend = treeMappend
+  mappend = flip treeMappend
 
 treeMappend :: Tree a -> Tree a -> Tree a
 treeMappend (Node v Leaf right) t = Node v t right
