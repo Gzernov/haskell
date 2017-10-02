@@ -24,11 +24,34 @@ module Homework_1
     , Monster (..)
     , Knight (..)
     , fight
+    , Vector (..)
+    , toListFromVector
+    , vecLen
+    , vecSum
+    , vecScalar
+    , vecVec
+    , vecDist
+    , Nat (..)
+    , fromIntegerToNat
+    , fromNatToInteger
+    , Tree (..)
+    , insertInTree
+    , findInTree
+    , sizeOf
+    , isEmpty
+    , fromList
+    -- 4th block
+    , toList
+    , splitOn
+    -- 5th block
+    , maybeConcat
+    , NonEmpty (..)
+    , Identity (..)
     ) where
 import           Data.Bits
 import           Data.List
 import           Data.Semigroup (Semigroup (..))
-import           System.Random
+import           System.Random (newStdGen, randomRs)
 import           TreePrinters
 
 --Block 2 Task 4
@@ -87,25 +110,26 @@ stringSum x = sum $ map advancedRead $ words x
     advancedRead charr    = read charr
 
 mergeSort :: Ord a => [a] -> [a]
-mergeSort y@(x:xs) =
+mergeSort []      = []
+mergeSort y@(x:_) =
   case y of
     [f, s] -> [min f s, max f s]
-    [f] -> [x]
-    lst -> let (first, second) = splitList y
+    [_] -> [x]
+    _ -> let (first, second) = splitList y
       in sortLists (mergeSort first) (mergeSort second) []
       where
         sortLists :: Ord a => [a] -> [a] -> [a] -> [a]
-        sortLists x@(xh:xt) y@(yh:yt) res =
-          if x < y
+        sortLists a@(ah:atail) b@(bh:bt) res =
+          if ah < bh
           then
-            sortLists xt y (res ++ [xh])
+            sortLists atail b (res ++ [ah])
           else
-            sortLists x yt (res ++ [yh])
-        sortLists [] y res = res ++ y
-        sortLists x [] res = res ++ x
+            sortLists a bt (res ++ [bh])
+        sortLists [] b res = res ++ b
+        sortLists a [] res = res ++ a
 
         splitList :: [a] -> ([a], [a])
-        splitList x = splitAt (length x `div` 2) x
+        splitList _x = splitAt (length _x `div` 2) _x
 
 --Block 3
 --first
@@ -137,7 +161,7 @@ data Knight = Knight Hp Attack
   deriving (Show, Eq)
 
 fight :: Monster -> Knight -> (Either Monster Knight, RestHp)
-fight m@(Monster mhp mat) k@(Knight khp kat) =
+fight (Monster mhp mat) (Knight khp kat) =
   let
     mAttacks = hp khp `div` at mat + 1
     kAttacks = (hp mhp + 1) `div` at kat
@@ -159,11 +183,15 @@ toListFromVector (Vector2D x y)   = [x, y, 0]
 toListFromVector (Vector3D x y z) = [x, y, z]
 
 fromListToVector :: Num a => Eq a => [a] -> Vector a
+fromListToVector []        = Vector2D 0 0
+fromListToVector [_]       = Vector2D 0 0
+fromListToVector [_, _]    = Vector2D 0 0
 fromListToVector [x, y, 0] = Vector2D x y
 fromListToVector [x, y, z] = Vector3D x y z
+fromListToVector (x:y:z:_) = Vector3D x y z
 
 vecLen :: Floating a => Vector a -> a
-vecLen v = sqrt $ sum $ map (^2) (toListFromVector v)
+vecLen v = sqrt $ sum $ map (**2) (toListFromVector v)
 
 vecSum :: Num a => Eq a => Vector a -> Vector a -> Vector a
 vecSum v u = fromListToVector $ zipWith (+) (toListFromVector v) (toListFromVector u)
@@ -180,7 +208,7 @@ vecVec v u =
     fromListToVector [vy * uz - vz * uy, vz * ux - vx * uz, vx * uy - vy * ux]
 
 vecDist ::  Floating a => Eq a => Vector a -> Vector a -> a
-vecDist v u = sqrt $ sum $ map (^2) (zipWith (-) (mapDiv2 $ toListFromVector v) (mapDiv2 $ toListFromVector u))
+vecDist v u = sqrt $ sum $ map (**2) (zipWith (-) (mapDiv2 $ toListFromVector v) (mapDiv2 $ toListFromVector u))
   where
     mapDiv2 :: Floating a => [a] -> [a]
     mapDiv2 = map (/2)
@@ -221,14 +249,15 @@ cmpNat (S x) (S y) = cmpNat x y
 
 sumNat :: Nat -> Nat -> Nat
 sumNat x (S y) = sumNat (S x) y
-sumNat x Z       = x
+sumNat x Z     = x
 
 mulNat :: Nat -> Nat -> Nat
-mulNat _ Z       = Z
-mulNat x (S Z)   = x
+mulNat _ Z     = Z
+mulNat x (S Z) = x
 mulNat x (S y) =  mulNat (sumNat x x) y
 
 subNat :: Nat -> Nat -> Nat
+subNat Z (S _)     = Z
 subNat x Z         = x
 subNat (S x) (S y) =  subNat x y
 
@@ -255,8 +284,8 @@ findInTree Leaf _ = Nothing
 findInTree (Node val left right) x =
   case compare val x of
     EQ -> Just val
-    GT -> findInTree right x
-    LT -> findInTree left x
+    GT -> findInTree left x
+    LT -> findInTree right x
 
 insertInTree :: Ord a => Tree a -> a -> Tree a
 insertInTree Leaf x = Node x Leaf Leaf
@@ -302,6 +331,7 @@ toList t = reverse . snd $ getLst (t, [])
         in getLst (newTree, least:lst)
           where
             findLeast :: (a, Tree a) -> (a, Tree a)
+            findLeast (_v, Leaf) = (_v, Leaf)
             findLeast (_, Node _val Leaf _right) = (_val, _right)
             findLeast (_v, Node _val _left _right) =
               let
@@ -324,13 +354,13 @@ maybeConcat :: [Maybe [a]] -> [a]
 maybeConcat = concatMap fromMaybe
   where
     fromMaybe :: Maybe [a] -> [a]
-    fromMaybe Nothing = []
+    fromMaybe Nothing  = []
     fromMaybe (Just x) = x
 
 data NonEmpty a = a :| [a]
-  deriving Show
+  deriving (Show, Eq)
 instance Semigroup (NonEmpty a) where
-  (ah :| at) <> (bh :| bt) = ah :| (at ++ bh : bt)
+  (ah :| atail) <> (bh :| btail) = ah :| (atail ++ bh : btail)
 
 newtype Identity a = Identity { runIdentity :: a }
   deriving Show
@@ -346,6 +376,7 @@ instance Monoid (Tree a) where
   mappend = flip treeMappend
 
 treeMappend :: Tree a -> Tree a -> Tree a
+treeMappend Leaf t                = t
 treeMappend (Node v Leaf right) t = Node v t right
-treeMappend (Node v left Leaf) t = Node v left t
+treeMappend (Node v left Leaf) t  = Node v left t
 treeMappend (Node v left right) t = Node v (treeMappend left t) right
