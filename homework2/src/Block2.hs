@@ -2,7 +2,7 @@ module Block2
   (
   ) where
 
-import           Control.Monad      (guard)
+import           Control.Monad (guard)
 
 bin :: Int -> [[Int]]
 bin 0 = [[]]

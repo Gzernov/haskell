@@ -1,11 +1,11 @@
 {-# LANGUAGE TypeOperators #-}
-module Block1div
+module Block1
   (
   ) where
 
-import           Control.Monad      (liftM2)
-import           Data.Maybe      (fromMaybe)
 import           Control.Category (Category, id, (.))
+import           Control.Monad    (liftM2)
+import           Data.Maybe       (fromMaybe)
 
 data Expr =
   Const Int
@@ -49,7 +49,7 @@ instance Category (~>)
       Partial (\x -> fun (applyOrElse gfun x dval))
 
 unwrap :: (a ~> b) -> (a ~> b)
-unwrap f@(Partial _) = f
+unwrap f@(Partial _)   = f
 unwrap (Defaulted f _) = f
 
 partial :: (a -> Maybe b) -> a ~> b
@@ -59,20 +59,20 @@ total :: (a -> b) -> a ~> b
 total f = Partial $ Just Prelude.. f
 
 apply :: (a ~> b) -> a -> Maybe b
-apply (Partial f) x = f x
+apply (Partial f) x     = f x
 apply (Defaulted f _) x = apply f x
 
 applyOrElse :: (a ~> b) -> a -> b -> b
 applyOrElse f val def = fromMaybe def (apply f val)
 
 withDefault :: (a ~> b) -> b -> (a ~> b)
-withDefault f@(Partial _) = Defaulted f
+withDefault f@(Partial _)   = Defaulted f
 withDefault (Defaulted f _) = withDefault f
 
 isDefinedAt :: (a ~> b) -> a -> Bool
 isDefinedAt f v = fromMaybe False (apply f v >>= \x -> Just True )
 
 orElse :: (a ~> b) -> (a ~> b) -> a ~> b
-orElse f@(Defaulted _ _ ) _ = f
+orElse f@(Defaulted _ _ ) _          = f
 orElse (Partial _) g@(Defaulted _ _) = g
-orElse f@(Partial _) (Partial _) = f
+orElse f@(Partial _) (Partial _)     = f
