@@ -168,9 +168,9 @@ instance Functor Tree  where
   fmap f (Node v left right) = Node (f v) (fmap f left) (fmap f right) --2
 
  -- LAW : 1. fmap id         ≡ id
- --          --База
+ --          --Base
  --          fmap id Leaf    ≡ Leaf ≡ id  --1
- --          --Переход. Доказано для l, r => доказано для (Node v l r)
+ --          --Inductive step. Proved for l and r => will be proved for (Node v l r)
  --          fmap id Node    ≡ Node (f v) (fmap id left) (fmap id right) --2
  --                          ≡ Node v left right ≡ id
 
