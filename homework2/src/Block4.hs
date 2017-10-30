@@ -128,12 +128,20 @@ parseSExpr =
 
 instance Monad Parser where
   return = pure --1
-  p >>= f = Parser (\x -> sub (runParser p x) f)
+  p >>= f = Parser (\x -> sub (runParser p x) f) --2
     where
       sub :: Maybe (a, String) -> (a -> Parser b) -> Maybe (b, String)
-      sub Nothing _ = Nothing
-      sub (Just (a, str)) f = runParser (f a) str
+      sub Nothing _ = Nothing --3
+      sub (Just (a, str)) f = runParser (f a) str --4
 
+  LAW 1: m >>= return     ≡ m
+         m >>= return ≡ m >>= pure --1
+                       ≡ m >>= (\s -> Parser(\y -> Just (s, y))) --pure def
+                      ≡ Parser (\x -> sub (runParser m x) (\s -> Parser(\y -> Just (s, y))) ) --2
+                      ≡ Parser (\x -> Nothing) --3, runParser m x == Nothing
+                      ≡ Parser (\x -> runParser Parser(\y -> Just (a, y)) str) --4, runParser m x == Just (a, str)
+                      ≡ Parser (\x -> Just (a, str)) --lambda apply
+                      ≡ m
 data LetSum = Num Integer | Var String
   deriving Show
 
