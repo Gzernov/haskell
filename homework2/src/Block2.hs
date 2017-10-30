@@ -1,5 +1,8 @@
 module Block2
   (
+    bin,
+    combinations,
+    permutations
   ) where
 
 import           Control.Monad (guard)

@@ -1,5 +1,20 @@
 module Block4
   (
+    abParser,
+    abParser_,
+    intPair,
+    intOrUppercase,
+    zeroOrMore,
+    oneOrMore,
+    satisfy,
+    spaces,
+    ident,
+    parseSExpr,
+    Ident ( .. ),
+    Atom ( .. ),
+    SExpr ( .. ),
+    Parser ( .. ),
+    parseAndSimplify
   ) where
 
 import Control.Monad (void, join)
@@ -53,8 +68,8 @@ abParser = toTuple <$> char 'a' <*> char 'b'
 abParser_ :: Parser ()
 abParser_ = void abParser
 
-intPair :: Parser (Integer, Integer)
-intPair = toTuple <$> posInt <*> (const <$> posInt <*> char ' ')
+intPair :: Parser [Integer]
+intPair = (\x y -> [x, y]) <$> (const <$> posInt <*> char ' ') <*> posInt
 
 instance Alternative Parser where
   empty = Parser $ const Nothing
@@ -78,22 +93,25 @@ ident = (++) <$> ((: []) <$> satisfy isAlpha) <*> zeroOrMore (satisfy isAlphaNum
 type Ident = String
 
 data Atom = N Integer | I Ident
-  deriving Show
+  deriving (Show, Eq)
 
 data SExpr = A Atom | Comb [SExpr]
-  deriving Show
+  deriving (Show, Eq)
 
 parseSExpr :: Parser SExpr
-parseSExpr = spaces *> char '(' *> (getSExpr <$> zeroOrMore parseAtom) <* spaces <* char ')'
-  where
-    getSExpr :: [SExpr] -> SExpr
-    getSExpr [h] = h
-    getSExpr lst = Comb lst
-    parseAtom :: Parser SExpr
-    parseAtom =
-      pure (A . N) <*> (spaces *> posInt) <|>
-      (pure (A . I) <*> (spaces *> ident)) <|>
-      parseSExpr
+parseSExpr =
+  spaces *> char '(' *> (getSExpr <$> zeroOrMore parseAtom) <* spaces <* char ')'
+  <|> spaces *> parseBase <* spaces
+    where
+      getSExpr :: [SExpr] -> SExpr
+      getSExpr [h] = h
+      getSExpr lst = Comb lst
+      parseBase :: Parser SExpr
+      parseBase =
+        pure (A . N) <*> (spaces *> posInt) <|>
+        (pure (A . I) <*> (spaces *> ident))
+      parseAtom :: Parser SExpr
+      parseAtom = parseBase <|> parseSExpr
 
 instance Monad Parser where
   return = pure
