@@ -167,10 +167,10 @@ instance Traversable (Either a) where
 
 instance Traversable Tree where
   sequenceA Leaf = pure Leaf
-  sequenceA (Node v Leaf Leaf) = pure (\x -> Node x Leaf Leaf) <*> v
--- instance Traversable Tree where
---   traverse _ Leaf = pure Leaf
---   traverse f (Node v l r) = fmap (\x -> Node x Leaf Leaf) (f v)
+  sequenceA (Node v l r) = -- Tree (f a)
+    fmap Node v   -- (a -> Tree a -> Tree a -> Tree a) -> f a -> f (Tree a -> Tree a -> Tree a)
+    <*> sequenceA l --f (Tree a -> Tree a -> Tree a) -> f (Tree a) -> f (Tree a -> Tree a)
+    <*> sequenceA r --f (Tree a -> Tree a) -> f (Tree a) -> f (Tree a)
 
 instance Traversable (Const a) where
   sequenceA (Const f) = pure (Const f)
