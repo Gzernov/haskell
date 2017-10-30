@@ -134,14 +134,14 @@ instance Monad Parser where
       sub Nothing _ = Nothing --3
       sub (Just (a, str)) f = runParser (f a) str --4
 
-  LAW 1: m >>= return     ≡ m
-         m >>= return ≡ m >>= pure --1
-                       ≡ m >>= (\s -> Parser(\y -> Just (s, y))) --pure def
-                      ≡ Parser (\x -> sub (runParser m x) (\s -> Parser(\y -> Just (s, y))) ) --2
-                      ≡ Parser (\x -> Nothing) --3, runParser m x == Nothing
-                      ≡ Parser (\x -> runParser Parser(\y -> Just (a, y)) str) --4, runParser m x == Just (a, str)
-                      ≡ Parser (\x -> Just (a, str)) --lambda apply
-                      ≡ m
+  -- LAW 1: m >>= return     ≡ m
+  --        m >>= return ≡ m >>= pure --1
+  --                      ≡ m >>= (\s -> Parser(\y -> Just (s, y))) --pure def
+  --                     ≡ Parser (\x -> sub (runParser m x) (\s -> Parser(\y -> Just (s, y))) ) --2
+  --                     ≡ Parser (\x -> Nothing) --3, runParser m x == Nothing
+  --                     ≡ Parser (\x -> runParser Parser(\y -> Just (a, y)) str) --4, runParser m x == Just (a, str)
+  --                     ≡ Parser (\x -> Just (a, str)) --lambda apply
+  --                     ≡ m
 data LetSum = Num Integer | Var String
   deriving Show
 
