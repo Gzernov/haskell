@@ -155,13 +155,3 @@ parseAndSimplify x = sequenceA (getLetExpr x) >>= Just . map getStr
     rf _ _ x = x
     getStr :: (String, Integer) -> String
     getStr (a, b) = "let " ++ a ++ " = " ++ show b
-
-testStrSimple :: String
-testStrSimple = "let x = 1 + 2 + 5" ++ "\n" ++
-  "let   y = 3+3" ++ "\n" ++
-  "let z=0+    4   + 5 + 8"
-
-testStr :: String
-testStr = "let x = 1 + 2 + 5" ++ "\n" ++
-  "let   y = x+x" ++ "\n" ++
-  "let z=0+    x   + y + 8"
