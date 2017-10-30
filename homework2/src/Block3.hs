@@ -80,21 +80,64 @@ data Tree a = Leaf | Node a (Tree a) (Tree a)
 
 newtype Const a b = Const { getConst :: a }
 
-instance Monad     m => MonadFish m  where
-  returnFish = return
-  (>=>) f g a = f a >>= g
+-- instance Monad     m => MonadFish m  where
+--   returnFish = return --1
+--   (>=>) f g a = f a >>= g --2
+
+  -- LAW : f >=> returnFish ≡ f
+  --       f >=> returnFish a ≡ f a >>=  returnFish --2
+  --                          ≡ f a >>= return --1
+  --                          ≡ f a --LAW 1
+  --       f >=> returnFish   ≡ f
 
 -- instance Monad     m => MonadJoin m where
---   returnJoin = return
---   join monad = monad >>= id
+--   returnJoin = return --1
+--   join monad = monad >>= id --2
 
-instance MonadFish m => Monad     m  where
-  return = returnFish
-  m >>=f = (>=>) id f m
+  -- LAW : join . returnJoin      ≡ id
+  --       join . returnJoin      ≡ join . return --1
+  --                              ≡ return >>= id --2
+  --                              ≡ id  --LAW 2
+
+-- instance MonadFish m => Monad     m  where
+--   return = returnFish    --1
+--   m >>=f = (>=>) id f m  -- 2
+
+  -- LAW : m >>= return     ≡ m
+  --       m >>= return     ≡ m >>= returnFish --1
+  --                        ≡ (>=>) id returnFish m --2
+  --                        ≡ id m --LAW 1
+  --                        ≡ m   -- id def
+
 
 instance MonadFish m => MonadJoin m  where
-  returnJoin = returnFish
-  join = (>=>) id id
+  returnJoin = returnFish --1
+  join = (>=>) id id --2
+
+  -- LAW : join . returnJoin      ≡ id
+  --      join . returnJoin       ≡ id (>=>) returnFish --2
+  --                              ≡ id       -- LAW 1
+
+instance (Functor m, MonadJoin m) => Monad m where
+  return  = returnJoin --1
+  m >>= f = join $ fmap f m --2
+
+  -- LAW: m >>= return    ≡ m
+  --      m >>= return    ≡ join $ fmap return m --2
+  --                      ≡ join $ fmap returnJoin m --1
+  --      >>= return      ≡ join . fmap returnJoin --def $
+  --                      ≡ id --LAW 2
+  --      m >>= return    ≡ m
+
+instance (Functor m, MonadJoin m) => MonadFish m where
+  returnFish = returnJoin -- 1
+  f >=> g = join . fmap g . f -- 2
+
+  -- LAW : f >=> returnFish     ≡ f
+  --                            ≡ f >=> returnJoin  -- 1
+  --                            ≡ (join . fmap returnJoin) . f -- 2
+  --                            ≡ id . f --2
+  --                            ≡ f
 
 instance Functor Identity  where
   fmap f = Identity . f . runIdentity
