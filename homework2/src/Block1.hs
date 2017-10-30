@@ -1,6 +1,9 @@
 {-# LANGUAGE TypeOperators #-}
 module Block1
   (
+    Expr ( .. ),
+    ArithmeticError ( .. ),
+    eval
   ) where
 
 import           Control.Category (Category, id, (.))
@@ -22,6 +25,7 @@ newtype ArithmeticError = ArithmeticError {msg :: String}
 eval :: Expr -> Either ArithmeticError Int
 eval (Const x) = Right x
 eval (Sum a b) = liftM2 (+) (eval a) (eval b)
+eval (Sub a b) = liftM2 (-) (eval a) (eval b)
 eval (Mul a b) = liftM2 (*) (eval a) (eval b)
 eval (Div a b) =
   if eval b == Right 0
@@ -44,13 +48,47 @@ data a ~> b
 instance Category (~>)
   where
     id = Partial Just
-    -- (.) :: b ~> c -> a ~> b -> a ~> c
-    f@(Partial fun) . g@(Defaulted gfun dval) =
-      Partial (\x -> fun (applyOrElse gfun x dval))
+    -- (.) :: (b ~> c) -> (a ~> b) -> (a ~> c)
+    f@ (Defaulted func v) . g = Defaulted (func Control.Category.. g) v
+    f . g =
+      Partial (\x -> sub (apply g x) f )
 
-unwrap :: (a ~> b) -> (a ~> b)
-unwrap f@(Partial _)   = f
-unwrap (Defaulted f _) = f
+  -- LAW : id . f = f . id = f
+  -- id . g = Partial (\x -> sub (apply g x) id )
+  --        = Partial (\x -> sub Nothing id) | apply g x == Nothing
+  --        = Partial (Nothing) == result g x
+  --
+  --        = Partial (\x -> sub Just a id) | apply g x = Just a
+  --        = Partial Just a == result g x
+  --
+  --  f . id = Partial (\x -> sub (apply id x) f)
+  --         = Partial (\x -> sub Just x f)
+  --         = Partial (\x -> f x)
+  --         = Partial f
+  --
+  -- f@ (Defaulted func v) . id  = Defaulted (func . id) v
+  --                            = ...
+  --                            = Defaulted (Partial func . id)
+  --                            = f
+
+  -- LAW : (f . g) . h = f . (g . h)
+  --
+  -- (f . g) . h = Partial (\x -> sub (apply h x) (f . g))
+  --             = Partial (\x -> sub (apply h x) Partial (\y -> sub (apply g y) f))
+  --             = Partial (\x -> sub (h x) Partial (\y -> sub (g y) f))
+  --
+  -- f . (g . h) = Partial (\x -> sub (apply (g . h) x) f)
+  --             = Partial (\x -> sub (apply (Partial (\y -> sub (apply h y) g)) x) f)
+  --             = Partial (\x -> sub (sub (apply h x) g) f)
+
+unwrap :: (a ~> b) -> (a -> Maybe b)
+unwrap (Partial f)   = f
+unwrap (Defaulted f _) = unwrap f
+
+sub :: Maybe a -> (a ~> b) -> Maybe b
+sub Nothing (Defaulted f fv) = Just fv
+sub Nothing _ = Nothing
+sub (Just a) f = unwrap f a
 
 partial :: (a -> Maybe b) -> a ~> b
 partial = Partial

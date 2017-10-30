@@ -104,11 +104,11 @@ instance Functor (Either b)  where
   fmap _ (Left x)  = Left x
 
 instance Functor Tree  where
-  fmap f Leaf                = Leaf
+  fmap _ Leaf                = Leaf
   fmap f (Node v left right) = Node (f v) (fmap f left) (fmap f right)
 
 instance Functor (Const a)  where
-  fmap f (Const a) = Const a
+  fmap _ (Const a) = Const a
 
 instance Functor ((,) a)  where
   fmap f (a, b) = (a, f b)
@@ -145,15 +145,15 @@ instance Foldable Identity where
   foldMap f (Identity v) = f v
 
 instance Foldable (Either a) where
-  foldMap f (Left x)  = mempty
+  foldMap _ (Left _)  = mempty
   foldMap f (Right x) = f x
 
 instance Foldable Tree where
-  foldMap f Leaf         = mempty
+  foldMap _ Leaf         = mempty
   foldMap f (Node v l r) = f v `mappend` foldMap f l `mappend` foldMap f r
 
 instance Foldable (Const a) where
-  foldMap f _ = mempty
+  foldMap _ _ = mempty
 
 instance Foldable ((,) a) where
   foldMap f (_, v) = f v
