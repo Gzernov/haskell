@@ -45,19 +45,32 @@ posInt = Parser f
 
 -- Real implementation
 instance Functor Parser where
-  fmap f (Parser a) = Parser (\x -> sub (a x) f)
+  fmap f (Parser a) = Parser (\x -> sub (a x) f) -- 1
+
+  -- LAW 1. fmap id           ≡ id
+  --        fmap id Parser(p) ≡ Parser (\x -> sub (p x) id) -- 1
+  --                          ≡ Parser (\x -> Nothing) , p x == Nothing -- sub 1
+  --                          ≡ Parser (\x -> Just (id a, b)), p x == Just (a, b) --sub 2
+  --                          ≡ Parser (p)
 
 sub :: Maybe (a, b) -> (a -> c) -> Maybe (c, b)
-sub Nothing _ = Nothing
-sub (Just (a, b)) f = Just (f a, b)
+sub Nothing _ = Nothing --1
+sub (Just (a, b)) f = Just (f a, b) --2
 
 instance Applicative Parser where
-  pure s = Parser(\x -> Just (s, x))
-  Parser f <*> p = Parser (\x -> getMaybe (f x) p)
+  pure s = Parser(\x -> Just (s, x)) --1
+  Parser f <*> p = Parser (\x -> getMaybe (f x) p) --2
     where
       getMaybe :: Maybe(a -> b, String) -> Parser a -> Maybe (b, String)
-      getMaybe Nothing _ = Nothing
-      getMaybe (Just (f, a)) (Parser val) = sub (val a) f
+      getMaybe Nothing _ = Nothing --3
+      getMaybe (Just (f, a)) (Parser val) = sub (val a) f --4
+
+      -- LAW 1. pure id <*> v ≡ v
+      --        pure id <*> v ≡ Parser (\y -> Just (id, y)) <*> v --1
+      --                      ≡ Parser (\x -> getMaybe ((\y -> Just (id, y)) x) v) --2
+      --                      ≡ Parser (\x -> getMaybe Just (id, x) v) --eval lambda
+      --                      ≡ Parser (\x -> sub (p x) id) --4, x == Parser(p)
+      --                      ≡ Parser (p) --see Functor
 
 toTuple :: a -> b -> (a, b)
 toTuple a b = (a, b)
@@ -114,13 +127,21 @@ parseSExpr =
       parseAtom = parseBase <|> parseSExpr
 
 instance Monad Parser where
-  return = pure
-  p >>= f = Parser (\x -> sub (runParser p x) f)
+  return = pure --1
+  p >>= f = Parser (\x -> sub (runParser p x) f) --2
     where
       sub :: Maybe (a, String) -> (a -> Parser b) -> Maybe (b, String)
-      sub Nothing _ = Nothing
-      sub (Just (a, str)) f = runParser (f a) str
+      sub Nothing _ = Nothing --3
+      sub (Just (a, str)) f = runParser (f a) str --4
 
+  -- LAW 1: m >>= return     ≡ m
+  --        m >>= return ≡ m >>= pure --1
+  --                      ≡ m >>= (\s -> Parser(\y -> Just (s, y))) --pure def
+  --                     ≡ Parser (\x -> sub (runParser m x) (\s -> Parser(\y -> Just (s, y))) ) --2
+  --                     ≡ Parser (\x -> Nothing) --3, runParser m x == Nothing
+  --                     ≡ Parser (\x -> runParser Parser(\y -> Just (a, y)) str) --4, runParser m x == Just (a, str)
+  --                     ≡ Parser (\x -> Just (a, str)) --lambda apply
+  --                     ≡ m
 data LetSum = Num Integer | Var String
   deriving Show
 
@@ -148,21 +169,27 @@ parseAndSimplify x = sequenceA (getLetExpr x) >>= Just . map getStr
   where
     getLetExpr :: String -> [Maybe (String, Integer)]
     getLetExpr str = foldLet $ map (:[]) $ sequenceA $ map toLetSum . fst <$> runParser parseLet str
+
     foldLet :: [[Maybe (String, [LetSum])]] -> [Maybe (String, Integer)]
     foldLet = foldl (\a b -> a ++ map toInt (replace a b)) []
+
     toLetSum :: LetExpr -> (String, [LetSum])
     toLetSum (Let y x) = (y, x)
+
     toInt :: Maybe (String, [LetSum]) -> Maybe (String, Integer)
     toInt Nothing = Nothing
     toInt (Just (s, lst))= sequenceA (s, sum <$> mapM toIntBase lst)
+
     toIntBase :: LetSum -> Maybe Integer
     toIntBase (Num n) = Just n
     toIntBase _ = Nothing
+
     replace :: [Maybe (String, Integer)] -> [Maybe (String, [LetSum])] -> [Maybe (String, [LetSum])]
     replace [] x = x
     replace _ [Nothing] = [Nothing]
     replace (Nothing : _) _ = [Nothing]
     replace (Just (x, xv):xs) [Just (y, yv)] = replace xs [Just (y, map (rf x xv) yv)]
+
     rf :: String -> Integer -> LetSum -> LetSum
     rf a b v@(Var s) =
       if s == a
@@ -171,5 +198,6 @@ parseAndSimplify x = sequenceA (getLetExpr x) >>= Just . map getStr
       else
         v
     rf _ _ x = x
+
     getStr :: (String, Integer) -> String
     getStr (a, b) = "let " ++ a ++ " = " ++ show b
